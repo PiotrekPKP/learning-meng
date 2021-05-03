@@ -6,6 +6,27 @@ import { User } from "./User";
 import { ObjectId } from "mongodb";
 
 @ObjectType()
+export class PostSubscription {
+    @Field(() => ID)
+    readonly _id: ObjectId;
+
+    @Field()
+    body: string
+
+    @Field()
+    createdAt: Date
+
+    @Field(() => [Comment], { nullable: true })
+    comments: Comment[]
+
+    @Field(() => [Like], { nullable: true })
+    likes: Like[]
+
+    @Field()
+    action: string;
+}
+
+@ObjectType()
 export class Post {
     @Field(() => ID)
     readonly _id: ObjectId;

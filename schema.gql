@@ -62,6 +62,15 @@ input PostInput {
   body: String!
 }
 
+type PostSubscription {
+  _id: ID!
+  action: String!
+  body: String!
+  comments: [Comment!]
+  createdAt: DateTime!
+  likes: [Like!]
+}
+
 type Query {
   post(postId: ObjectId!): Post!
   posts: [Post!]
@@ -75,7 +84,7 @@ input RegisterInput {
 }
 
 type Subscription {
-  newPost: Post!
+  postsUpdate: PostSubscription!
 }
 
 type User {

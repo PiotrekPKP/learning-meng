@@ -11,7 +11,7 @@ import {
     Root, Subscription,
     UseMiddleware
 } from 'type-graphql'
-import { Post, PostModel } from "../models/Post";
+import { Post, PostModel, PostSubscription } from "../models/Post";
 import { ObjectId } from "mongodb";
 import ObjectIdScalar from "../object-id.scalar";
 import { PostInput } from "./types/post.input";
@@ -36,14 +36,15 @@ export default class PostResolver {
     @Mutation(() => Post)
     async addPost(@Arg("post") { body }: PostInput, @Ctx() context, @PubSub() pubsub: PubSubEngine): Promise<Post> {
         const post: any = await new PostModel({ body, createdAt: new Date(), user: context.user.id }).save();
-        await pubsub.publish("POSTS", post);
+        await pubsub.publish("POSTS", { ...post, action: "ADD" });
         return post;
     }
 
     @Authorized()
     @UseMiddleware(PostExistsMiddleware, PostOwnerMiddleware)
     @Mutation(() => Post)
-    async deletePost(@Arg("postId", () => ObjectIdScalar) id: ObjectId, @Ctx() context): Promise<Post> {
+    async deletePost(@Arg("postId", () => ObjectIdScalar) id: ObjectId, @Ctx() context, @PubSub() pubsub: PubSubEngine): Promise<Post> {
+        await pubsub.publish("POSTS", { ...context.post, action: "DELETE" });
         return await context.post.delete();
     }
 
@@ -58,8 +59,8 @@ export default class PostResolver {
     }
 
     @Subscription({ topics: "POSTS" })
-    newPost(@Root() post: Post | any): Post {
-        return post;
+    postsUpdate(@Root() post: Post | any): PostSubscription {
+        return { ...post._doc, action: post.action };
     }
 
     @FieldResolver()

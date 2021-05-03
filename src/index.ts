@@ -14,7 +14,7 @@ const main = async () => {
 
     const apolloServer = new ApolloServer({
         schema,
-        //formatError: (error: GraphQLError) => errorFormatting(error),
+        formatError: (error: GraphQLError) => errorFormatting(error),
         context: ({ req }: { req: Request }) => getContext({ req })
     });
 

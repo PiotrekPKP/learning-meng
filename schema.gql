@@ -74,6 +74,10 @@ input RegisterInput {
   username: String!
 }
 
+type Subscription {
+  newPost: Post!
+}
+
 type User {
   _id: ID!
   createdAt: DateTime!

@@ -1,4 +1,16 @@
-import {Arg, Authorized, Ctx, FieldResolver, Mutation, Query, Resolver, Root, UseMiddleware} from 'type-graphql'
+import {
+    Arg,
+    Authorized,
+    Ctx,
+    FieldResolver,
+    Mutation,
+    PubSub,
+    PubSubEngine,
+    Query,
+    Resolver,
+    Root, Subscription,
+    UseMiddleware
+} from 'type-graphql'
 import { Post, PostModel } from "../models/Post";
 import { ObjectId } from "mongodb";
 import ObjectIdScalar from "../object-id.scalar";
@@ -22,8 +34,9 @@ export default class PostResolver {
 
     @Authorized()
     @Mutation(() => Post)
-    async addPost(@Arg("post") { body }: PostInput, @Ctx() context): Promise<Post> {
+    async addPost(@Arg("post") { body }: PostInput, @Ctx() context, @PubSub() pubsub: PubSubEngine): Promise<Post> {
         const post: any = await new PostModel({ body, createdAt: new Date(), user: context.user.id }).save();
+        await pubsub.publish("POSTS", post);
         return post;
     }
 
@@ -42,6 +55,11 @@ export default class PostResolver {
         if(userLikesPost) context.post.likes = context.post.likes.filter(like => like.username !== context.user.username);
         else context.post.likes.push({ username: context.user.username, createdAt: new Date(), _id: new ObjectId() })
         return await context.post.save();
+    }
+
+    @Subscription({ topics: "POSTS" })
+    newPost(@Root() post: Post | any): Post {
+        return post;
     }
 
     @FieldResolver()

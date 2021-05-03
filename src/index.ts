@@ -1,41 +1,31 @@
 import 'reflect-metadata';
-import { ApolloServer, ServerInfo, UserInputError } from 'apollo-server';
-import mongoose, { Mongoose } from "mongoose";
+import { ApolloServer } from 'apollo-server-express';
+import mongoose from "mongoose";
+import express from "express";
 
 import { MONGODB } from "../config";
-import { authChecker } from "./utils/auth.checker";
-import { buildSchema } from "type-graphql";
-import { GraphQLSchema } from "graphql";
+import { createSchema, errorFormatting, getContext } from "./utils/schema";
+import { GraphQLError } from "graphql";
+import { Request } from "apollo-server";
+import * as http from "http";
 
-import PostResolver from "./resolvers/post.resolver";
-import UserResolver from "./resolvers/user.resolver";
-import CommentResolver from "./resolvers/comment.resolver";
+const main = async () => {
+    const schema = await createSchema();
 
-mongoose.connect(MONGODB,{ useNewUrlParser: true, useUnifiedTopology: true })
-    .then((r: Mongoose) => {
-        console.log(`MongoDB (${ r.connection.name }) connected!`);
-        return buildSchema({
-            resolvers: [PostResolver, UserResolver, CommentResolver],
-            emitSchemaFile: true,
-            authChecker
-        });
-    })
-    .then((schema: GraphQLSchema) => {
-        const server = new ApolloServer({
-            schema,
-            formatError: (error) => {
-                let errorStack: string[] = [];
-                if(error.extensions.exception.validationErrors) { error.extensions.exception.validationErrors.forEach(validationError => errorStack.push(validationError.constraints[Object.keys(validationError.constraints)[0]])) }
-                else { errorStack = error.extensions.errors }
-
-                return new UserInputError(error.originalError.message, {
-                    errors: errorStack
-                })
-            },
-            context: ({ req }) => ({ req })
-        });
-        return server.listen({ port: 5000 });
-    })
-    .then((res: ServerInfo) => {
-        console.log(`Server running at ${ res.url }!`)
+    const apolloServer = new ApolloServer({
+        schema,
+        //formatError: (error: GraphQLError) => errorFormatting(error),
+        context: ({ req }: { req: Request }) => getContext({ req })
     });
+
+    const app = express();
+    apolloServer.applyMiddleware({ app });
+
+    const httpServer = http.createServer(app);
+    apolloServer.installSubscriptionHandlers(httpServer);
+
+    await mongoose.connect(MONGODB, { useNewUrlParser: true, useUnifiedTopology: true });
+    httpServer.listen(5000, () => console.log(`Server started at http://localhost:5000/graphql`))
+}
+
+main().then(() => console.log('Server initialized'));

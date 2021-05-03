@@ -23,12 +23,7 @@ export default class PostResolver {
     @Authorized()
     @Mutation(() => Post)
     async addPost(@Arg("post") { body }: PostInput, @Ctx() context): Promise<Post> {
-        const post: any = await new PostModel({
-            body,
-            createdAt: new Date(),
-            user: context.user.id
-        }).save();
-
+        const post: any = await new PostModel({ body, createdAt: new Date(), user: context.user.id }).save();
         return post;
     }
 

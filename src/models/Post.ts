@@ -22,6 +22,9 @@ export class PostSubscription {
     @Field(() => [Like], { nullable: true })
     likes: Like[]
 
+    @Field(() => User)
+    user: Ref<User>
+
     @Field()
     action: string;
 }

@@ -18,6 +18,7 @@ import { PostInput } from "./types/post.input";
 import PostOwnerMiddleware from "../middlewares/post-owner.middleware";
 import PostExistsMiddleware from "../middlewares/post-exists.middleware";
 import { User, UserModel } from "../models/User";
+import {UserInputError} from "apollo-server-express";
 
 @Resolver(() => Post)
 export default class PostResolver {
@@ -60,7 +61,9 @@ export default class PostResolver {
 
     @Subscription({ topics: "POSTS" })
     postsUpdate(@Root() post: Post | any): PostSubscription {
-        return { ...post._doc, action: post.action };
+        const user = UserModel.findById(post._doc.user);
+        if(!user) throw new UserInputError("Post error", { errors: [ "There is no given user!" ] })
+        return { ...post._doc, action: post.action, user };
     }
 
     @FieldResolver()

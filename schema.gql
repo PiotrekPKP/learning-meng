@@ -69,6 +69,7 @@ type PostSubscription {
   comments: [Comment!]
   createdAt: DateTime!
   likes: [Like!]
+  user: User!
 }
 
 type Query {
